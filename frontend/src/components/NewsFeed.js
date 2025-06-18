@@ -14,12 +14,25 @@ const TOPICS = [
 ];
 
 export default function NewsFeed() {
+  // Add darkmode state ( default to users OS preference)
+  const [darkMode, setDarkMode] = useState(()=>{
+    return window.matchMedia('(prefers-color-scheme: dark)').matches || localStorage.getItem('darkMode') === 'true';
+  }); 
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [activeTopic, setActiveTopic] = useState("All Topics");
   const [lastUpdated, setLastUpdated] = useState(null);
-
+  //Toggle function
+  const toggleDarkMode = () => {
+    const newMode = !darkMode;
+    setDarkMode(newMode);
+    localStorage.setItem('darkMode', newMode);
+  };
+  //Apply class to body
+  useEffect(() => {
+    document.body.className = darkMode ? 'darkmode' : 'light-mode';
+  },[darkMode]);
   // Fetch news only when explicitly called (initial load or manual refresh)
   const fetchNews = useCallback(async () => {
     setLoading(true);
@@ -53,7 +66,7 @@ export default function NewsFeed() {
   );
 
   return (
-    <div className="news-container">
+    <div className={`news-container ${darkMode ? 'dark' : ''}`}>
       <header>
         <h1>AI Powered News Aggregator</h1>
         {lastUpdated && (
@@ -62,7 +75,17 @@ export default function NewsFeed() {
           </p>
         )}
       </header>
-      
+       {/* Add toggle button near your controls */}
+      <div className="controls">
+        {/* ... existing controls ... */}
+        <button 
+          onClick={toggleDarkMode}
+          className="dark-mode-toggle"
+          aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+        >
+          {darkMode ? '☀️' : '🌙'}
+        </button>
+      </div>
       <div className="controls">
         <select 
           value={activeTopic}
