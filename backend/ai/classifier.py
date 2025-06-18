@@ -1,90 +1,64 @@
 from transformers import pipeline
-import requests
-import os
-from dotenv import load_dotenv
-import time
-import transformers
+import logging
 
-#Load environment variables
-load_dotenv()
-NEWS_API_KEY =os.getenv('NEWS_API_KEY')
+#Configure logging
+logger = logging.getLogger(__name__)
 
-def fetch_news(api_key, catergory="technology", country="us", page_size=5):
-    url = "https://newsapi.org/v2/top-headlines"
-    params = {
-        "apiKey" : api_key,
-        "catergory": catergory,
-        "country": country,
-        "page_size": page_size
-    }
-    try:
-        response = requests.get(url,params=params)
-        response.raise_for_status()
-        data = response.json()
-        return [article["title"] for article in data["articles"]]
-    except Exception as e:
-        print(f"Error Fetching news: {e}")
-        return[]
-    
+# Initialize classifier globally to avoid reloading
+classifier = None
+
+def initialize_classifier():
+    """Lazy initialization of the classifier"""
+    global classifier
+    if classifier is None:
+        logger.info("Initializing NLP classifier")
+        classifier = pipeline(
+            "zero-shot-classification",
+            model="facebook/bart-large-mnli",
+            device=-1,
+            torch_dtype="auto"
+        )
+    return classifier
+
 def classify_news(headline):
-    #Initialize classifier ( will download model for first time)'
-    classifier = pipeline("zero-shot-classification",
-                          model="facebook/bart-large-mnli",
-                          device=-1,#Force CPU optimization
-                          torch_dtype = "auto")
+    """
+    Classify a news headline into predefined topics
+    Args:
+        headline (str): News headline text
+    Returns:
+        tuple: (topic, confidence_score)
+    """
+    if not headline or not isinstance(headline, str):
+        logger.warning("Invalid headline received")
+        return "General News", 0.0
     
-    #Define new categories
-    candidate_labels = [
+    try:
+        model = initialize_classifier()
+        candidate_labels = [
             "Technology & Computing",
-    "Business & Finance",
-    "Politics & Government",
-    "Sports & Athletics",
-    "Entertainment & Celebrities",
-    "Science & Research",
-    "Health & Medicine",
-    "Environment & Climate",
-    "Education & Schools"
-    ]
-    
-    #Classify the headline
-    result = classifier(headline, candidate_labels)
-
-    #Get Top Results
-    top_topic = result['labels'][0]
-    confidence = result['scores'][0]
-    
-    #Only accept classification with >60% confidence
-    if confidence < 0.30:
-        top_topic = "General News"
-    
-    return top_topic, confidence
-
-#Test Function
-def main():
-    if not NEWS_API_KEY:
-        print("Error: NEWSAPI key is not found")
-        return
-    
-    print("Fetching latest news headlines...")
-    headlines = fetch_news(NEWS_API_KEY,catergory="technology")
-    
-    if not headlines:
-        print("No headlines found. Check your API key or different category")
-        return
-    
-    print(" AI News Classifier Initializing")
-    print("(First run may take 1-2 minutes to download the model)")
-    print("-" * 50 )
-    
-    for headline in headlines:
-        start_time = time.time()
-        topic, confidence = classify_news(headline)
-        elapsed=time.time() - start_time
+            "Business & Finance",
+            "Politics & Government",
+            "Sports & Athletics",
+            "Entertainment & Celebrities",
+            "Science & Research",
+            "Health & Medicine",
+            "Environment & Climate",
+            "Education & Schools",
+        ]
         
-        print(f"Headline: {headline}")
-        print(f"Topic: {topic} ({confidence:.0%} confidence)")
-        print(f"Processing Time: {elapsed:.2f} seconds")
-        print("-" *50)
+        result = model(headline, candidate_labels)
+        topic = result['labels'][0]
+        confidence = result['scores'][0]
         
-if __name__ == "__main__":
-    main()
+        #If confidence is below 20%, classify as General News
+        if confidence < 0.20:
+            logger.info(f"Low confidence ({confidence:.0%}) - classifying as General News")
+            return "General News", confidence
+        logger.debug(f"Classified '{headline[:30]}...' as {topic} ({confidence:.0%})")
+        return topic, confidence
+        
+    except Exception as e:
+        logger.error(f"Classification failed: {str(e)}")
+        return "General News", 0.0
+    
+
