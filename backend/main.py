@@ -27,9 +27,6 @@ app.add_middleware(
     allow_methods=["*"], #Allow all HTTP methods
     allow_headers=["*"], #Allow all headers
 )
-#Data Models
-class NewsItem(BaseModel):
-    headline:str #The news headline to classify
     
 class NewsQuery(BaseModel):
     category: str = "technology" 
@@ -37,26 +34,8 @@ class NewsQuery(BaseModel):
     page_size: int = 5
     
 #API Endpoints
-@app.post("/classify")
-async def classify(item: NewsItem):
-    try:
-        #Call AI classification function
-        topic, confidence = classify_news(item.headline)
-        
-        return{
-            "topic":topic,
-            "confidence":f"{confidence:.0%}", #converts to percentage
-            "headline": item.headline
-        }
-    except Exception as e:
-        #Handle errors 
-        raise HTTPException(
-            status_code=500,
-            detail=f"Classifcation failed : {str(e)}"
-        )
-        
-@app.post("/fetch-and-classify")
-async def fetch_and_classify(query:NewsQuery):
+@app.post("/news")
+async def get_news(query: NewsQuery):
     try:
         
         logger.info(f"Fetching news with parms: {query}")
