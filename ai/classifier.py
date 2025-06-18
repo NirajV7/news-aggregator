@@ -3,6 +3,7 @@ import requests
 import os
 from dotenv import load_dotenv
 import time
+import transformers
 
 #Load environment variables
 load_dotenv()
@@ -28,21 +29,33 @@ def fetch_news(api_key, catergory="technology", country="us", page_size=5):
 def classify_news(headline):
     #Initialize classifier ( will download model for first time)'
     classifier = pipeline("zero-shot-classification",
-                          model="facebook/bart-large-mnli")
+                          model="facebook/bart-large-mnli",
+                          device=-1,#Force CPU optimization
+                          torch_dtype = "auto")
     
     #Define new categories
     candidate_labels = [
-        "Technology" , "Business" , "Politics",
-        "Sports" , "Entertainment" , "Science" ,
-        "Health" , "Environment", "Education"
+            "Technology & Computing",
+    "Business & Finance",
+    "Politics & Government",
+    "Sports & Athletics",
+    "Entertainment & Celebrities",
+    "Science & Research",
+    "Health & Medicine",
+    "Environment & Climate",
+    "Education & Schools"
     ]
     
     #Classify the headline
     result = classifier(headline, candidate_labels)
-    
+
     #Get Top Results
     top_topic = result['labels'][0]
     confidence = result['scores'][0]
+    
+    #Only accept classification with >60% confidence
+    if confidence < 0.30:
+        top_topic = "General News"
     
     return top_topic, confidence
 
