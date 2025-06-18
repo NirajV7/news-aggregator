@@ -43,13 +43,18 @@ def classify_news(headline):
             "Science & Research",
             "Health & Medicine",
             "Environment & Climate",
-            "Education & Schools"
+            "Education & Schools",
         ]
         
         result = model(headline, candidate_labels)
         topic = result['labels'][0]
         confidence = result['scores'][0]
         
+        #If confidence is below 20%, classify as General News
+        if confidence < 0.20:
+            logger.info(f"Low confidence ({confidence:.0%}) - classifying as General News")
+            return "General News", confidence
+        logger.debug(f"Classified '{headline[:30]}...' as {topic} ({confidence:.0%})")
         return topic, confidence
         
     except Exception as e:
