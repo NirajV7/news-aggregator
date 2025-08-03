@@ -38,7 +38,7 @@ export default function NewsFeed() {
     setLoading(true);
     setError(null);
     try {
-      const response = await axios.post('http://localhost:8000/news', {
+      const response = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/news`, {
         category: "general",
         page_size: 20
       });
