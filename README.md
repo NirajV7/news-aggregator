@@ -15,7 +15,12 @@
 ![NewsAPI](https://img.shields.io/badge/NewsAPI-2.0-lightgrey)  
 
 ### Frontend  
-![React](https://img.shields.io/badge/React-18-%2361DAFB)  
+
+## Contributors
+
+- Athul Muralidharan (`athul8550`) — contributed product ideas, feedback, and validation input during development.
+-
+- ![React](https://img.shields.io/badge/React-18-%2361DAFB)  
 ![Create React App](https://img.shields.io/badge/CRA-5.0-%2309D3AC)  
 ![CSS Modules](https://img.shields.io/badge/CSS_Modules-1.0-%231572B6)  
 
